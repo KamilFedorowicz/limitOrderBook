@@ -20,6 +20,7 @@ struct Order
     Side side;
     Price price;
     Quantity quantity;
+    void print() const;
 };
 
 /*
@@ -37,6 +38,7 @@ public:
     std::size_t size() const{return orders_.size();}
     Quantity total_quantity() const; // does nto modify the PriceLevel object
     bool empty() const{return orders_.empty();}
+    void printOrders() const;
 private:
     Price price_;
     std::list<Order> orders_;

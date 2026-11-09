@@ -1,21 +1,43 @@
 #include <iostream>
-#include <vector>
-#include <list>
 
 #include "basics.h"
+#include "LimitOrderBook.h"
 
 int main(int argc, const char * argv[]) {
 
-    PriceLevel priceLevel(9800);
-    
     Order order1{123, Side::Buy, 9800, 100};
     Order order2{124, Side::Sell, 9801, 200};
     Order order3{125, Side::Buy, 9800, 400};
+    Order order4{126, Side::Buy, 10000, 150};
+    Order order5{127, Side::Sell, 10200, 260};
+    Order order6{128, Side::Buy, 1900, 404};
     
-    priceLevel.add(order1);
-    priceLevel.add(order2);
-    priceLevel.add(order3);
     
+    LimitOrderBook limitOrderBook;
+    limitOrderBook.add(order1);
+    limitOrderBook.add(order2);
+    limitOrderBook.add(order3);
+    limitOrderBook.add(order4);
+    limitOrderBook.add(order5);
+    limitOrderBook.add(order6);
+    
+    std::cout << "Asks: " << std::endl;
+    limitOrderBook.printAsks();
+    
+    std::cout << "Bids: " << std::endl;
+    limitOrderBook.printBids();
+    
+    auto bid = limitOrderBook.bestBid();
+    if(bid.has_value())
+    {
+        std::cout << "Best bid: " << bid.value() << "\n";
+    }
+    
+    auto ask = limitOrderBook.bestAsk();
+    if(ask.has_value())
+    {
+        std::cout << "Best ask: " << ask.value() << "\n";
+    }
     
     
     return 0;

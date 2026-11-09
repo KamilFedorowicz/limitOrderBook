@@ -1,5 +1,14 @@
 #include "basics.h"
 
+void Order::print() const
+{
+    std::cout << "Id: " << id <<
+    ", side: " << (side == Side::Buy ? "Buy" : "Sell") <<
+    ", price: " << price <<
+    ", quantity: " << quantity
+    << std::endl;
+    
+}
 
 PriceLevel::PriceLevel(Price price): price_(price)
 {}
@@ -26,5 +35,13 @@ Quantity PriceLevel::total_quantity() const
     }
     
     return result;
+}
+
+void PriceLevel::printOrders() const
+{
+    for(const Order& order: orders_)
+    {
+        order.print();
+    }
 }
 
