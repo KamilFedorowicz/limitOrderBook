@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <iostream>
+#include <unordered_map>
 
 enum class Side
 {
@@ -14,6 +15,7 @@ using Price = std::int64_t;
 using Quantity = std::uint64_t;
 using OrderId = std::uint64_t;
 
+
 struct Order
 {
     OrderId id;
@@ -21,6 +23,13 @@ struct Order
     Price price;
     Quantity quantity;
     void print() const;
+};
+
+struct OrderLocation
+{
+    Side side;
+    Price price;
+    std::list<Order>::iterator it;
 };
 
 /*
@@ -34,7 +43,7 @@ class PriceLevel
 {
 public:
     PriceLevel(Price price);
-    void add(const Order& order);
+    std::optional<std::list<Order>::iterator> add(const Order& order);
     std::size_t size() const{return orders_.size();}
     Quantity total_quantity() const; // does nto modify the PriceLevel object
     bool empty() const{return orders_.empty();}

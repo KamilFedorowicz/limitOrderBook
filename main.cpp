@@ -6,6 +6,7 @@
 int main(int argc, const char * argv[]) {
 
     Order order1{123, Side::Buy, 9800, 100};
+    Order order12{123, Side::Buy, 9800, 100};
     Order order2{124, Side::Sell, 9801, 200};
     Order order3{125, Side::Buy, 9800, 400};
     Order order4{126, Side::Buy, 10000, 150};
@@ -15,6 +16,7 @@ int main(int argc, const char * argv[]) {
     
     LimitOrderBook limitOrderBook;
     limitOrderBook.add(order1);
+    limitOrderBook.add(order12);
     limitOrderBook.add(order2);
     limitOrderBook.add(order3);
     limitOrderBook.add(order4);
@@ -39,11 +41,20 @@ int main(int argc, const char * argv[]) {
         std::cout << "Best ask: " << ask.value() << "\n";
     }
     
+    auto spread = limitOrderBook.spread();
+    if(spread.has_value())
+    {
+        std::cout << "Spread: " << spread.value() << "\n";
+    }
+    
     
     return 0;
 }
 
 /*
+ bid - order to buy
+ ask - order to sell
+ 
  LOB - limited order book
  participanys may say 'i want to buy 100 units at 9 each' or 'sell 40 units at 100'
  orders form a limit book.
@@ -63,7 +74,7 @@ spread = 0.20
 
  BUY ORDERS / BIDS
  essentially buyers want to little as possible, sellers want to get as much as possible
- the most competitive buy - highest bid, most competitive sell - lowest bid (order to buy/sell)
+ the most competitive buy - highest bid, most competitive sell - lowest bid (order to buy)
  
  for a simplified system, order may containt id, side (buy/sell), price, quantity.
  

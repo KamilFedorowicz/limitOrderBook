@@ -1,4 +1,5 @@
 #include "basics.h"
+#include <iterator>
 
 void Order::print() const
 {
@@ -13,15 +14,17 @@ void Order::print() const
 PriceLevel::PriceLevel(Price price): price_(price)
 {}
 
-void PriceLevel::add(const Order& order)
+std::optional<std::list<Order>::iterator> PriceLevel::add(const Order& order)
 {
     if(order.price == price_)
     {
         orders_.push_back(order);
+        auto iter = std::prev(orders_.end());
+        return iter;
     }
     else
     {
-        std::cout << "Inconsistent price levels for price " << order.price << "\n";
+        return std::nullopt;
     }
 }
 
