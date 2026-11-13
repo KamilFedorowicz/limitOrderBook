@@ -11,6 +11,7 @@ public:
     void printBids() const;
     void printAsks() const;
     void cancel(OrderId id);
+    void modify(OrderId id, Quantity quantity); // for now just changing quantity
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;
     std::optional<Price> spread() const;

@@ -22,12 +22,15 @@ int main(int argc, const char * argv[]) {
     limitOrderBook.add(order6);
     
     limitOrderBook.cancel(123);
+    limitOrderBook.modify(124, 600);
     
     std::cout << "Asks: " << std::endl;
     limitOrderBook.printAsks();
     
     std::cout << "Bids: " << std::endl;
     limitOrderBook.printBids();
+    
+    
     
     
     

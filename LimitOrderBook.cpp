@@ -74,6 +74,20 @@ void LimitOrderBook::add(const Order& order)
     }
 }
 
+void LimitOrderBook::modify(OrderId id, Quantity newQuantity)
+{
+    auto iter = orderIndex_.find(id);
+    if(iter != orderIndex_.end() && newQuantity > 0)
+    {
+        Quantity& quant = iter->second.it->quantity;
+        quant = newQuantity;
+        /*
+         simpler approach would be
+         iter->second.it->quantity = newQuantity;
+         */
+    }
+}
+
 /*
 the same order is stored in two data structures for different purposes.
  PriceLevel contains the roder because we care about orders at price, quantity etc
