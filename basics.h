@@ -29,7 +29,7 @@ struct OrderLocation
 {
     Side side;
     Price price;
-    std::list<Order>::iterator it;
+    std::list<Order>::iterator it; // stores where the order lives
 };
 
 /*
@@ -44,6 +44,7 @@ class PriceLevel
 public:
     PriceLevel(Price price);
     std::optional<std::list<Order>::iterator> add(const Order& order);
+    void remove(std::list<Order>::iterator iterator);
     std::size_t size() const{return orders_.size();}
     Quantity total_quantity() const; // does nto modify the PriceLevel object
     bool empty() const{return orders_.empty();}

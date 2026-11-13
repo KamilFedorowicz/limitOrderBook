@@ -48,3 +48,8 @@ void PriceLevel::printOrders() const
     }
 }
 
+void PriceLevel::remove(std::list<Order>::iterator iter)
+{
+    orders_.erase(iter);
+}
+

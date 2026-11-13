@@ -74,6 +74,52 @@ void LimitOrderBook::add(const Order& order)
     }
 }
 
+/*
+the same order is stored in two data structures for different purposes.
+ PriceLevel contains the roder because we care about orders at price, quantity etc
+ orderIndex_ is just a fast lookup mechanism
+ */
+void LimitOrderBook::cancel(OrderId id)
+{
+    auto iter = orderIndex_.find(id);
+    if(iter != orderIndex_.end())
+    {
+        
+        // get OrderLocation
+        Side side = iter->second.side;
+        Price price = iter->second.price;
+        auto orderIter = iter->second.it;
+        
+        if(side == Side::Buy)
+        {
+            PriceLevel& priceLevel = bids_.at(price);
+            // remove the exact order using iterator
+            priceLevel.remove(orderIter);
+            
+            // if the price level is empty, remove it from the list
+            if(priceLevel.empty())
+            {
+                bids_.erase(price);
+            }
+        }
+        else
+        {
+            // side == Side::Sell
+            PriceLevel& priceLevel = asks_.at(price);
+            priceLevel.remove(orderIter);
+            
+            if(priceLevel.empty())
+            {
+                asks_.erase(price);
+            }
+        }
+        // remove ID from the order index
+        orderIndex_.erase(id);
+        
+    }
+    
+}
+
 void LimitOrderBook::printBids() const
 {
     for(const auto& [price, priceLevel]: bids_)

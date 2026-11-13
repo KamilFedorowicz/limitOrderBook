@@ -10,6 +10,7 @@ public:
     void add(const Order& order);
     void printBids() const;
     void printAsks() const;
+    void cancel(OrderId id);
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;
     std::optional<Price> spread() const;

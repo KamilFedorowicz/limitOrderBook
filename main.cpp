@@ -6,7 +6,6 @@
 int main(int argc, const char * argv[]) {
 
     Order order1{123, Side::Buy, 9800, 100};
-    Order order12{123, Side::Buy, 9800, 100};
     Order order2{124, Side::Sell, 9801, 200};
     Order order3{125, Side::Buy, 9800, 400};
     Order order4{126, Side::Buy, 10000, 150};
@@ -16,12 +15,13 @@ int main(int argc, const char * argv[]) {
     
     LimitOrderBook limitOrderBook;
     limitOrderBook.add(order1);
-    limitOrderBook.add(order12);
     limitOrderBook.add(order2);
     limitOrderBook.add(order3);
     limitOrderBook.add(order4);
     limitOrderBook.add(order5);
     limitOrderBook.add(order6);
+    
+    limitOrderBook.cancel(123);
     
     std::cout << "Asks: " << std::endl;
     limitOrderBook.printAsks();
@@ -29,23 +29,6 @@ int main(int argc, const char * argv[]) {
     std::cout << "Bids: " << std::endl;
     limitOrderBook.printBids();
     
-    auto bid = limitOrderBook.bestBid();
-    if(bid.has_value())
-    {
-        std::cout << "Best bid: " << bid.value() << "\n";
-    }
-    
-    auto ask = limitOrderBook.bestAsk();
-    if(ask.has_value())
-    {
-        std::cout << "Best ask: " << ask.value() << "\n";
-    }
-    
-    auto spread = limitOrderBook.spread();
-    if(spread.has_value())
-    {
-        std::cout << "Spread: " << spread.value() << "\n";
-    }
     
     
     return 0;
