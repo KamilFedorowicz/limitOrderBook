@@ -2,45 +2,33 @@
 
 #include "basics.h"
 #include "LimitOrderBook.h"
+#include "tests.cpp"
 
 int main(int argc, const char * argv[]) {
 
-    Order order1{123, Side::Buy, 9800, 100};
-    Order order2{124, Side::Sell, 9801, 200};
-    Order order3{125, Side::Buy, 9800, 400};
-    Order order4{126, Side::Buy, 10000, 150};
-    Order order5{127, Side::Sell, 10200, 260};
-    Order order6{128, Side::Buy, 1900, 404};
-    Order order7{129, Side::Buy, 9800, 900};
+    LimitOrderBook book;
     
+    MarketEvent event1{EventType::Add, 134, Side::Buy, 9800, 100};
+    MarketEvent event2{EventType::Add, 135, Side::Buy, 9600, 200};
+    MarketEvent event3{EventType::Add, 136, Side::Buy, 9700, 300};
     
-    LimitOrderBook limitOrderBook;
-    limitOrderBook.add(order1);
-    limitOrderBook.add(order2);
-    limitOrderBook.add(order3);
-    limitOrderBook.add(order4);
-    limitOrderBook.add(order5);
-    limitOrderBook.add(order6);
-    limitOrderBook.add(order7);
+    book.process(event1);
+    book.process(event2);
+    book.process(event3);
     
-    limitOrderBook.cancel(123);
-    limitOrderBook.modify(124, 600);
+    MarketEvent event4{EventType::Modify, 136, Side::Buy, 9700, 600};
     
-    std::cout << "Asks: " << std::endl;
-    limitOrderBook.printAsks();
+    book.process(event4);
     
-    std::cout << "Bids: " << std::endl;
-    limitOrderBook.printBids();
+    MarketEvent event5{EventType::Cancel, 135, Side::Buy, 9700, 600};
     
-    Price testPrice = 9800;
-    std::optional<Quantity> result = limitOrderBook.quantityAtPrice(Side::Buy, testPrice);
+    book.process(event5);
+
     
-    if(result.has_value())
-    {
-        std::cout << "Total quantity at " << testPrice << ": " << result.value() << std::endl;
-    }
+    book.printBids();
+    book.printAsks();
     
-    
+    //runAllTests();
     
     return 0;
 }

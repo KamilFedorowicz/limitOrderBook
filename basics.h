@@ -32,6 +32,26 @@ struct OrderLocation
     std::list<Order>::iterator it; // stores where the order lives
 };
 
+enum class EventType
+{
+    Add,
+    Cancel,
+    Modify
+};
+
+struct MarketEvent
+{
+    EventType type;
+    OrderId id;
+    Side side;
+    Price price;
+    Quantity quantity;
+    
+    // Add needs id, side, price, quantity
+    // Calcel needs id
+    // Modigy needs id, quantity
+};
+
 /*
 what is price level?
  suppose some orders arrive: (1. 100qty at 99.8; 2. 50 at 99.8; 3. 25 at 99.7; 4. 200 at 99.8). Four different orders, but 3 of them at the same price. Thus the market groups them: Price 99.8, order 1 buy 100, order 2 buy 50, order 4 buy 200. The total quantity available at 99.8 = 350. The whole bucket is one price level. Then, the other bucket (order 3) is at another price level.

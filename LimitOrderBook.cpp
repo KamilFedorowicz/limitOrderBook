@@ -166,11 +166,13 @@ void LimitOrderBook::cancel(OrderId id)
 
 void LimitOrderBook::printBids() const
 {
+    std::cout << "Bids:\n";
     for(const auto& [price, priceLevel]: bids_)
     {
         std::cout << "Price level: " << price << '\n';
         priceLevel.printOrders();
     }
+    std::cout << std::endl;
 }
 
 void LimitOrderBook::printAsks() const
@@ -210,4 +212,30 @@ std::optional<Price> LimitOrderBook::spread() const
     
     return ask.value() - bid.value();
     
+}
+
+void LimitOrderBook::process(const MarketEvent& event)
+{
+    switch(event.type)
+    {
+        case EventType::Add:
+        {
+            const Order order({event.id, event.side, event.price, event.quantity});
+            add(order);
+            break;
+        }
+        case EventType::Cancel:
+        {
+            cancel(event.id);
+            break;
+        }
+        case EventType::Modify:
+        {
+            modify(event.id, event.quantity);
+            break;
+            
+        }
+        default:
+            break;
+    }
 }
