@@ -11,6 +11,7 @@ int main(int argc, const char * argv[]) {
     Order order4{126, Side::Buy, 10000, 150};
     Order order5{127, Side::Sell, 10200, 260};
     Order order6{128, Side::Buy, 1900, 404};
+    Order order7{129, Side::Buy, 9800, 900};
     
     
     LimitOrderBook limitOrderBook;
@@ -20,6 +21,7 @@ int main(int argc, const char * argv[]) {
     limitOrderBook.add(order4);
     limitOrderBook.add(order5);
     limitOrderBook.add(order6);
+    limitOrderBook.add(order7);
     
     limitOrderBook.cancel(123);
     limitOrderBook.modify(124, 600);
@@ -30,7 +32,13 @@ int main(int argc, const char * argv[]) {
     std::cout << "Bids: " << std::endl;
     limitOrderBook.printBids();
     
+    Price testPrice = 9800;
+    std::optional<Quantity> result = limitOrderBook.quantityAtPrice(Side::Buy, testPrice);
     
+    if(result.has_value())
+    {
+        std::cout << "Total quantity at " << testPrice << ": " << result.value() << std::endl;
+    }
     
     
     

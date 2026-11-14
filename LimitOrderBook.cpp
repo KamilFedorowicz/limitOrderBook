@@ -82,12 +82,42 @@ void LimitOrderBook::modify(OrderId id, Quantity newQuantity)
         Quantity& quant = iter->second.it->quantity;
         quant = newQuantity;
         /*
-         simpler approach would be
+         more compact approach would be
          iter->second.it->quantity = newQuantity;
          */
     }
 }
 
+std::optional<Quantity> LimitOrderBook::quantityAtPrice(Side side, Price price) const
+{
+    if(side == Side::Buy)
+    {
+        auto it = bids_.find(price);
+        if(it != bids_.end())
+        {
+            const PriceLevel& priceLevel = it->second;
+            return priceLevel.total_quantity();
+            /*
+             more compact approach would be
+             return it->second.total_quantity();
+             */
+            
+        }
+        return std::nullopt;
+    }
+    else // (side == Side::Buy)
+    {
+        auto it = asks_.find(price);
+        if(it != asks_.end())
+        {
+            const PriceLevel& priceLevel = it->second;
+            return priceLevel.total_quantity();
+        
+        }
+        return std::nullopt;
+    }
+
+}
 /*
 the same order is stored in two data structures for different purposes.
  PriceLevel contains the roder because we care about orders at price, quantity etc

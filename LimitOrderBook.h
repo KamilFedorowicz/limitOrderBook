@@ -15,6 +15,7 @@ public:
     std::optional<Price> bestBid() const;
     std::optional<Price> bestAsk() const;
     std::optional<Price> spread() const;
+    std::optional<Quantity> quantityAtPrice(Side side, Price price) const;
     
 private:
     // map sorts ascending, so thats good because lowest ask (sell) is best
