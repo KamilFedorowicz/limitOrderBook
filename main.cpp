@@ -3,26 +3,17 @@
 #include "basics.h"
 #include "LimitOrderBook.h"
 #include "tests.cpp"
+#include "MarketDataGenerator.h"
 
 int main(int argc, const char * argv[]) {
 
     LimitOrderBook book;
+    MarketDataGenerator generator;
     
-    MarketEvent event1{EventType::Add, 134, Side::Buy, 9800, 100};
-    MarketEvent event2{EventType::Add, 135, Side::Buy, 9600, 200};
-    MarketEvent event3{EventType::Add, 136, Side::Buy, 9700, 300};
-    
-    book.process(event1);
-    book.process(event2);
-    book.process(event3);
-    
-    MarketEvent event4{EventType::Modify, 136, Side::Buy, 9700, 600};
-    
-    book.process(event4);
-    
-    MarketEvent event5{EventType::Cancel, 135, Side::Buy, 9700, 600};
-    
-    book.process(event5);
+    for(int i=0; i<10000; i++)
+    {
+        book.process(generator.next());
+    }
 
     
     book.printBids();

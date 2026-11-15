@@ -177,6 +177,7 @@ void LimitOrderBook::printBids() const
 
 void LimitOrderBook::printAsks() const
 {
+    std::cout << "Asks:\n";
     for(const auto& [price, priceLevel]: asks_)
     {
         std::cout << "Price level: " << price << '\n';
