@@ -10,14 +10,24 @@ int main(int argc, const char * argv[]) {
     LimitOrderBook book;
     MarketDataGenerator generator;
     
-    for(int i=0; i<10000; i++)
+    for(int i=0; i<1000; i++)
     {
         book.process(generator.next());
+        assert(book.validate());
+    }
+    
+    if(book.validate())
+    {
+        std::cout << "Validated!\n";
+    }
+    else
+    {
+        std::cout << "Not validated!\n";
     }
 
     
-    book.printBids();
-    book.printAsks();
+    //book.printBids();
+    //book.printAsks();
     
     //runAllTests();
     

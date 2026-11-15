@@ -240,3 +240,114 @@ void LimitOrderBook::process(const MarketEvent& event)
             break;
     }
 }
+
+bool LimitOrderBook::validate() const
+{
+    std::size_t orderCount = 0;
+    // check if no price level is empty
+    for(const auto& [price, priceLevel]: bids_)
+    {
+        if(priceLevel.empty())
+        {
+            return false;
+        }
+        
+        for(const Order& order: priceLevel.orders())
+        {
+            orderCount++;
+            if(order.price != price)
+            {
+                return false;
+            }
+            
+            if(order.side != Side::Buy)
+            {
+                return false;
+            }
+            
+            if(order.quantity == 0)
+            {
+                return false;
+            }
+            
+            auto indexIt = orderIndex_.find(order.id);
+            if(indexIt == orderIndex_.end())
+            {
+                return false;
+            }
+            
+            const OrderLocation& location = indexIt->second;
+            if(location.side != order.side)
+            {
+                return false;
+            }
+            
+            if(location.price != order.price)
+            {
+                return false;
+            }
+            
+            if(location.it->id != order.id)
+            {
+                return false;
+            }
+            
+        }
+    }
+    
+    for(const auto& [price, priceLevel]: asks_)
+    {
+        if(priceLevel.empty())
+        {
+            return false;
+        }
+        
+        for(const Order& order: priceLevel.orders())
+        {
+            orderCount++;
+            if(order.price != price)
+            {
+                return false;
+            }
+            
+            if(order.side != Side::Sell)
+            {
+                return false;
+            }
+            
+            if(order.quantity == 0)
+            {
+                return false;
+            }
+            
+            auto indexIt = orderIndex_.find(order.id);
+            if(indexIt == orderIndex_.end())
+            {
+                return false;
+            }
+            
+            const OrderLocation& location = indexIt->second;
+            if(location.side != order.side)
+            {
+                return false;
+            }
+            
+            if(location.price != order.price)
+            {
+                return false;
+            }
+            
+            if(location.it->id != order.id)
+            {
+                return false;
+            }
+        }
+    }
+    
+    if(orderCount != orderIndex_.size())
+    {
+        return false;
+    }
+    
+    return true;
+}

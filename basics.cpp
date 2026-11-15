@@ -53,3 +53,8 @@ void PriceLevel::remove(std::list<Order>::iterator iter)
     orders_.erase(iter);
 }
 
+const std::list<Order>& PriceLevel::orders() const
+{
+    return orders_;
+}
+

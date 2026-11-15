@@ -69,6 +69,8 @@ public:
     Quantity total_quantity() const; // does nto modify the PriceLevel object
     bool empty() const{return orders_.empty();}
     void printOrders() const;
+    const std::list<Order>& orders() const;
+    
 private:
     Price price_;
     std::list<Order> orders_;
