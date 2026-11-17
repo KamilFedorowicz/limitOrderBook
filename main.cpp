@@ -4,32 +4,52 @@
 #include "LimitOrderBook.h"
 #include "tests.cpp"
 #include "MarketDataGenerator.h"
+#include "BoundedQueue.h"
+#include <thread>
+#include <functional>
+#include <chrono>
+
+constexpr std::size_t eventCount = 10000;
+
+void producer(MarketDataGenerator& generator, BoundedQueue& queue)
+{
+    for(size_t i = 0; i < eventCount; i++)
+    {
+        MarketEvent event = generator.next();
+        queue.add(event);
+    }
+}
+
+void consumer(LimitOrderBook& book, BoundedQueue& queue)
+{
+    for(std::size_t i=0; i<eventCount; i++)
+    {
+        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        /*
+         since we are using queue.pop(), it will wait in case the queue is empty
+         when it returns, the event is guaranted to be a valid market event
+         */
+        auto event = queue.pop();
+        book.process(event);
+    }
+}
 
 int main(int argc, const char * argv[]) {
 
     LimitOrderBook book;
     MarketDataGenerator generator;
+    BoundedQueue queue(100);
     
-    for(int i=0; i<1000; i++)
-    {
-        book.process(generator.next());
-        assert(book.validate());
-    }
+    // std::ref(...) forces to pass objects by reference instead of coppying them
+    std::thread producerThread(producer, std::ref(generator), std::ref(queue));
+    std::thread consumerThread(consumer, std::ref(book), std::ref(queue));
     
-    if(book.validate())
-    {
-        std::cout << "Validated!\n";
-    }
-    else
-    {
-        std::cout << "Not validated!\n";
-    }
-
+    producerThread.join();
+    consumerThread.join();
     
-    //book.printBids();
-    //book.printAsks();
+    std::cout << "Events remaining: " << queue.size() << '\n';
     
-    //runAllTests();
+    assert(book.validate());
     
     return 0;
 }
