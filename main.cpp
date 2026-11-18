@@ -8,8 +8,9 @@
 #include <thread>
 #include <functional>
 #include <chrono>
+#include "learningCondVars.h"
 
-constexpr std::size_t eventCount = 10000;
+constexpr std::size_t eventCount = 1'000'000;
 
 void producer(MarketDataGenerator& generator, BoundedQueue& queue)
 {
@@ -34,11 +35,42 @@ void consumer(LimitOrderBook& book, BoundedQueue& queue)
     }
 }
 
-int main(int argc, const char * argv[]) {
+double runSingleThreaded()
+{
+    LimitOrderBook book;
+    MarketDataGenerator generator;
 
+    auto start = std::chrono::steady_clock::now();
+
+    for (std::size_t i = 0; i < eventCount; ++i)
+    {
+        MarketEvent event = generator.next();
+        book.process(event);
+    }
+
+    auto end = std::chrono::steady_clock::now();
+
+    auto duration = end - start;
+    // use std::chrono::duration<double, std::muli> ms = duration; for milisedonds
+    double seconds = std::chrono::duration<double>(end - start).count();
+
+    double throughput = eventCount / seconds;
+    
+    std::cout << "Single threaded:\n";
+    std::cout << "Events: " << eventCount << std::endl;
+    std::cout << "Time: " << seconds << "s" << std::endl;
+    std::cout << "Throughput: " << throughput << " events/s" << std::endl;
+    
+    return seconds;
+}
+
+double runMultiThreaded()
+{
     LimitOrderBook book;
     MarketDataGenerator generator;
     BoundedQueue queue(100);
+    
+    auto start = std::chrono::steady_clock::now();
     
     // std::ref(...) forces to pass objects by reference instead of coppying them
     std::thread producerThread(producer, std::ref(generator), std::ref(queue));
@@ -47,11 +79,36 @@ int main(int argc, const char * argv[]) {
     producerThread.join();
     consumerThread.join();
     
-    std::cout << "Events remaining: " << queue.size() << '\n';
+    auto end = std::chrono::steady_clock::now();
     
-    assert(book.validate());
+    double seconds = std::chrono::duration<double>(end - start).count();
+
+    double throughput = eventCount / seconds;
+    
+    std::cout << "Multi threaded:\n";
+    std::cout << "Events: " << eventCount << std::endl;
+    std::cout << "Time: " << seconds << "s" << std::endl;
+    std::cout << "Throughput: " << throughput << " events/s" << std::endl;
+    
+    return seconds;
+}
+
+int main(int argc, const char * argv[]) {
+
+    double timeSingle = 0;
+    double timeMulti = 0;
+    for(int i=0; i<10; i++)
+    {
+        timeSingle += runSingleThreaded();
+        timeMulti += runMultiThreaded();
+    }
+
+    std::cout << "Single: " << timeSingle/10.0 << ", time multi: " << timeMulti/10.0 << std::endl;
+    
+    // assert(book.validate());
     
     return 0;
+    
 }
 
 /*
