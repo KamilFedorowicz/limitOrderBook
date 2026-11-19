@@ -9,6 +9,7 @@
 #include <functional>
 #include <chrono>
 #include "learningCondVars.h"
+#include "SPSCRingBuffer.h"
 
 constexpr std::size_t eventCount = 1'000'000;
 
@@ -50,7 +51,6 @@ double runSingleThreaded()
 
     auto end = std::chrono::steady_clock::now();
 
-    auto duration = end - start;
     // use std::chrono::duration<double, std::muli> ms = duration; for milisedonds
     double seconds = std::chrono::duration<double>(end - start).count();
 
@@ -95,9 +95,21 @@ double runMultiThreaded()
 
 int main(int argc, const char * argv[]) {
 
+    SPSCRingBuffer buffer;
+    MarketDataGenerator generator;
+    
+    for(std::size_t i = 0; i < 10; i++)
+    {
+        MarketEvent event = generator.next();
+        buffer.push(event);
+    }
+    
+    
+    
+    /*
     double timeSingle = 0;
     double timeMulti = 0;
-    for(int i=0; i<10; i++)
+    for(int i=0; i<2; i++)
     {
         timeSingle += runSingleThreaded();
         timeMulti += runMultiThreaded();
@@ -106,6 +118,7 @@ int main(int argc, const char * argv[]) {
     std::cout << "Single: " << timeSingle/10.0 << ", time multi: " << timeMulti/10.0 << std::endl;
     
     // assert(book.validate());
+    */
     
     return 0;
     
