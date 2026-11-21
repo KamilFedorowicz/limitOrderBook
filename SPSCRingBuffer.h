@@ -4,18 +4,24 @@
 #include <optional>
 #include <atomic>
 #include "MarketDataGenerator.h"
+#include <new>
+
+struct alignas(64) AlignedIndex
+{
+    std::atomic<std::size_t> value{0};
+};
 
 class SPSCRingBuffer
 {
 private:
-    static constexpr std::size_t Capacity = 5;
+    static constexpr std::size_t Capacity = 1024;
     
     // fixed-size array containing Capacity number of elements
     // array<int, 2> means we create: [int] [int]
     std::array<MarketEvent, Capacity> buffer_;
     // buffer does not need ot be atomic - only producer writes into a slot, consumer reads
-    std::atomic<std::size_t> readIndex_{0}; // safe concurent access because of atomic
-    std::atomic<std::size_t> writeIndex_{0};
+    AlignedIndex readIndex_{0}; // safe concurent access because of atomic
+    AlignedIndex writeIndex_{0};
     
 
 
@@ -53,4 +59,31 @@ SPSC means single producer single consumer
            +-----+-----+-----+-----+-----+
              ^                       ^
             read                   write
-*/
+
+ 
+ false sharing
+ producer modifise writeIndex, consumer modifies readIndex
+ problem: they are probably physically adjacent in memory.
+ | readIndex_ | writeIndex_ | ...
+ CPU cores operate in cache lines.. of both atomics occupy the same cache line,
+ then they can interfere with one another because they are modifying differeny bytes
+ of the SAME cache line. this is false sharing. 'false' because from cpp programmers
+ perspectivy, threads arent sharing the same variable
+ 
+ CPU try to keep frequently accessed memory close to the executing core. if the following
+ writeIndex_.load();
+ writeIndex_.store(...);
+ is executed a lot, then the relevant memory is in a cache close to that CPU core.
+ Common cache line is 64 bytes. size_t is probably 8 bytes. thus both atomics can occupy the same line
+ 
+ Say producer  is done by core A (writes writeIndex), consumer is done by core B (readIndex)
+ but physically both cores can modify the same cache line.
+ For a core to modify a particular line of cache, it needs to own it. hence the cache line ping-pongs between cores
+ this is false sharing as if the cores were sharing the state (but this is not the case)
+ in the case of SPSC buffer, the same cache line keeps changing upon writing to it and reading it
+ 
+ However, we cannot completely eliminate communication because the producer reads readIndex, and consumer
+ reads writeIndex.
+ 
+ 
+ */

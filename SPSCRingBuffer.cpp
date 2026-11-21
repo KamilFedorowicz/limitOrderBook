@@ -2,12 +2,12 @@
 
 bool SPSCRingBuffer::empty() const
 {
-    return readIndex_ == writeIndex_;
+    return readIndex_.value == writeIndex_.value;
 }
 
 bool SPSCRingBuffer::full() const
 {
-    return (writeIndex_ + 1) % Capacity == readIndex_;
+    return (writeIndex_.value + 1) % Capacity == readIndex_.value;
 }
 
 // during push the consumer suddenly wont modify writeIndex_
@@ -17,8 +17,8 @@ bool SPSCRingBuffer::push(const MarketEvent& event)
     // load creates an ordinary local variable from the atomic
     
     // producer: where did I leave off (note that writeIndex_ is modified by producer only)
-    std::size_t write = writeIndex_.load(std::memory_order_relaxed);
-    std::size_t read = readIndex_.load(std::memory_order_acquire);
+    std::size_t write = writeIndex_.value.load(std::memory_order_relaxed);
+    std::size_t read = readIndex_.value.load(std::memory_order_acquire);
     
     std::size_t nextWrite = (write + 1) % Capacity;
     
@@ -32,7 +32,7 @@ bool SPSCRingBuffer::push(const MarketEvent& event)
         buffer_[write] = event; // write
         
         // tell other thread that the data is ready
-        writeIndex_.store(nextWrite, std::memory_order_release); // publish new write position
+        writeIndex_.value.store(nextWrite, std::memory_order_release); // publish new write position
         // put the package in the mailbox, raise a flag saying there is a mail (second line)
         // everything this thread did before release operation must be published
         // before another thread successfully acquires this publication
@@ -47,13 +47,13 @@ std::optional<MarketEvent> SPSCRingBuffer::pop()
     // need this access to establish order of memory operations between threads
     // basically asking 'where did i leave it last time' because only
     // consumer modifies this variable
-    std::size_t read = readIndex_.load(std::memory_order_relaxed);
+    std::size_t read = readIndex_.value.load(std::memory_order_relaxed);
     
     // writeIndex_ i a different story because it was written by the producer
     // (push). this value communicates 'i finished the event, you can read it'
     // producer says 'event xyz' is ready. consumer 'i observed that its ready'
     // the index isnt that important, it is the market data that is
-    std::size_t write = writeIndex_.load(std::memory_order_acquire);
+    std::size_t write = writeIndex_.value.load(std::memory_order_acquire);
     
     if(write == read)
     {
@@ -68,7 +68,7 @@ std::optional<MarketEvent> SPSCRingBuffer::pop()
         
         // consumer communicating in another direction.
         // it says to producer: 'finished reading the slot, you can reuase it'
-        readIndex_.store(nextRead, std::memory_order_release);
+        readIndex_.value.store(nextRead, std::memory_order_release);
         return event;
     }
 }

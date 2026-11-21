@@ -10,6 +10,7 @@
 #include <chrono>
 #include "learningCondVars.h"
 #include "SPSCRingBuffer.h"
+#include "Counters.h"
 
 constexpr std::size_t eventCount = 1'000'000;
 
@@ -151,13 +152,50 @@ void runSPSCBuffer()
     
 }
 
-// note the symmetry
+constexpr std::size_t iterations = 100'000'000;
+void thr1(Counters& counters)
+{
+    for(std::size_t i = 0; i<iterations; i++)
+    {
+        // fetch means atomically incremeent a by one
+        counters.a.value.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+void thr2(Counters& counters)
+{
+    for(std::size_t i = 0; i<iterations; i++)
+    {
+        counters.b.value.fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+void runSimpleCounterExample()
+{
+    Counters counters;
+    auto start = std::chrono::steady_clock::now();
+    
+    std::thread th1(thr1, std::ref(counters));
+    std::thread th2(thr2, std::ref(counters));
+    
+    th1.join();
+    th2.join();
+    
+    
+    auto end = std::chrono::steady_clock::now();
+    
+    std::cout << counters.a.value.load() << "\n";
+    std::cout << counters.b.value.load() << "\n";
+    
+    
+    double seconds = std::chrono::duration<double>(end - start).count();
+    std::cout << "Time: " << seconds << "s" << std::endl;
+}
 
 int main(int argc, const char * argv[]) {
 
-    runSingleThreaded();
-    runMultiThreaded();
     runSPSCBuffer();
+    
     
     
     /*
