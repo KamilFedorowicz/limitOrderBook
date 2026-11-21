@@ -93,17 +93,71 @@ double runMultiThreaded()
     return seconds;
 }
 
-int main(int argc, const char * argv[]) {
-
-    SPSCRingBuffer buffer;
-    MarketDataGenerator generator;
-    
-    for(std::size_t i = 0; i < 10; i++)
+void producerSPSC(MarketDataGenerator& generator, SPSCRingBuffer& buffer)
+{
+    for(int i=0; i<eventCount; ++i)
     {
         MarketEvent event = generator.next();
-        buffer.push(event);
+        
+        while(buffer.push(event) == false)
+        {
+            // spin while empty
+        }
+        
     }
+
+}
+
+void consumerSPSC(LimitOrderBook& book, SPSCRingBuffer& buffer)
+{
+    for(int i=0; i<eventCount; ++i)
+    {
+        std::optional<MarketEvent> event = buffer.pop();
+        
+        while(event.has_value() == false)
+        {
+            // spin while empty
+            event = buffer.pop(); // check again
+        }
+        
+        book.process(event.value());
+    }
+}
+
+void runSPSCBuffer()
+{
+    LimitOrderBook book;
+    MarketDataGenerator generator;
+    SPSCRingBuffer buffer;
     
+    auto start = std::chrono::steady_clock::now();
+    
+    std::thread producerThread(producerSPSC, std::ref(generator), std::ref(buffer));
+    std::thread consumerThread(consumerSPSC, std::ref(book), std::ref(buffer));
+    
+    producerThread.join();
+    consumerThread.join();
+    
+    auto end = std::chrono::steady_clock::now();
+    
+    double seconds = std::chrono::duration<double>(end - start).count();
+
+    double throughput = eventCount / seconds;
+    
+    std::cout << "SPCSC approach:\n";
+    std::cout << "Events: " << eventCount << std::endl;
+    std::cout << "Time: " << seconds << "s" << std::endl;
+    std::cout << "Throughput: " << throughput << " events/s" << std::endl;
+    
+}
+
+// note the symmetry
+
+int main(int argc, const char * argv[]) {
+
+    runSingleThreaded();
+    runMultiThreaded();
+    runSPSCBuffer();
     
     
     /*

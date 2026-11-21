@@ -2,6 +2,8 @@
 #include "basics.h"
 #include <array>
 #include <optional>
+#include <atomic>
+#include "MarketDataGenerator.h"
 
 class SPSCRingBuffer
 {
@@ -11,15 +13,17 @@ private:
     // fixed-size array containing Capacity number of elements
     // array<int, 2> means we create: [int] [int]
     std::array<MarketEvent, Capacity> buffer_;
-    std::size_t readIndex_ = 0;
-    std::size_t writeIndex_ = 0;
+    // buffer does not need ot be atomic - only producer writes into a slot, consumer reads
+    std::atomic<std::size_t> readIndex_{0}; // safe concurent access because of atomic
+    std::atomic<std::size_t> writeIndex_{0};
     
-    bool empty() const;
-    bool full() const;
+
 
 public:
     bool push(const MarketEvent& event);
     std::optional<MarketEvent> pop();
+    bool empty() const;
+    bool full() const;
     
 };
 
