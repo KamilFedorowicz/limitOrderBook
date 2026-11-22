@@ -2,7 +2,7 @@
 
 #include "basics.h"
 #include "LimitOrderBook.h"
-#include "tests.cpp"
+#include "tests.h"
 #include "MarketDataGenerator.h"
 #include "BoundedQueue.h"
 #include <thread>
@@ -11,6 +11,7 @@
 #include "learningCondVars.h"
 #include "SPSCRingBuffer.h"
 #include "Counters.h"
+#include <iomanip>
 
 constexpr std::size_t eventCount = 1'000'000;
 
@@ -192,9 +193,86 @@ void runSimpleCounterExample()
     std::cout << "Time: " << seconds << "s" << std::endl;
 }
 
+constexpr std::size_t iterations2 = 1'000'000;
+
+void allocationBenchmark()
+{
+    std::vector<Order*> orders;
+    orders.reserve(iterations2);
+
+    auto start = std::chrono::steady_clock::now();
+
+    for (std::size_t i = 0; i < iterations2; ++i)
+    {
+        orders.push_back(
+            new Order{
+                static_cast<OrderId>(i),
+                Side::Buy,
+                10000,
+                100
+            }
+        );
+    }
+
+    auto end = std::chrono::steady_clock::now();
+
+    std::uint64_t checksum = 0;
+
+    for (Order* order : orders)
+    {
+        checksum += order->id;
+    }
+
+    for (Order* order : orders)
+    {
+        delete order;
+    }
+
+    double seconds =
+        std::chrono::duration<double>(end - start).count();
+
+    std::cout << "Checksum: " << checksum << '\n';
+    std::cout << std::fixed << std::setprecision(9)
+              << "Allocation benchmark time: " << seconds << "s\n";
+}
+
+void preallocatedSpace()
+{
+    std::vector<Order> orders;
+    orders.reserve(iterations2);
+    
+    auto start = std::chrono::steady_clock::now();
+    
+    for (std::size_t i = 0; i < iterations2; ++i)
+    {
+        orders.push_back(Order{
+            static_cast<OrderId>(i),
+            Side::Buy,
+            10000,
+            100
+        });
+    }
+    
+    auto end = std::chrono::steady_clock::now();
+    
+    std::uint64_t checksum = 0;
+
+    for (const Order& order : orders)
+    {
+        checksum += order.id;
+    }
+    
+    double seconds = std::chrono::duration<double>(end - start).count();
+
+    std::cout << "Checksum: " << checksum << '\n';
+    std::cout << std::fixed << std::setprecision(9)
+              << "Pre-allocation time: " << seconds << "s\n";
+}
+
 int main(int argc, const char * argv[]) {
 
-    runSPSCBuffer();
+    allocationBenchmark();
+    preallocatedSpace();
     
     
     

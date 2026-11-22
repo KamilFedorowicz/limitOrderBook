@@ -1,9 +1,4 @@
-#pragma once
-
-#include <cassert>
-#include <iostream>
-#include "LimitOrderBook.h"
-
+#include "tests.cpp"
 void testEmptyBook()
 {
     LimitOrderBook book;
