@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 
 #include "basics.h"
 #include "LimitOrderBook.h"
@@ -11,7 +12,8 @@
 #include "learningCondVars.h"
 #include "SPSCRingBuffer.h"
 #include "Counters.h"
-#include <iomanip>
+#include "OrderPool.h"
+
 
 constexpr std::size_t eventCount = 1'000'000;
 
@@ -271,8 +273,58 @@ void preallocatedSpace()
 
 int main(int argc, const char * argv[]) {
 
-    allocationBenchmark();
-    preallocatedSpace();
+
+    OrderPool pool;
+
+    
+    for (std::size_t i = 0; i < 6; ++i)
+    {
+        std::optional<std::size_t> isAdded = pool.add(Order{
+            static_cast<OrderId>(i),
+            Side::Buy,
+            10000,
+            100
+        });
+        
+        if(isAdded.has_value())
+        {
+            std::cout << "Added order " << i << std::endl;
+        }
+        else
+        {
+            std::cout << "Rejected order " << i << std::endl;
+        }
+    }
+    
+    Order* ord = pool.get(1);
+    pool.releaseSlot(1);
+    
+    Order* ord2 = pool.get(1);
+    if(ord2 == nullptr)
+    {
+        std::cout << "Empty order\n";
+    }
+    else
+    {
+        std::cout << "Not empty\n";
+    }
+    
+    std::optional<std::size_t> slot = pool.add(Order{
+        static_cast<OrderId>(20),
+        Side::Buy,
+        10000,
+        100
+    });
+    
+    
+    if(slot.has_value())
+    {
+        Order* ord3 = pool.get(slot.value());
+        std::cout << "Id of the added order: " << ord3->id << std::endl;
+    }
+
+    
+    
     
     
     

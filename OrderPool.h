@@ -5,16 +5,21 @@
 
 class OrderPool
 {
+public:
+    OrderPool();
+    std::optional<std::size_t> add(const Order& order);
+    Order* get(std::size_t slot);
+    void releaseSlot(std::size_t slot);
+
+    
 private:
     static constexpr std::size_t Capacity = 5;
     
     std::array<Order, Capacity> orders_;
     std::vector<std::size_t> freeSlots_;
-    
-public:
-    OrderPool();
+
     std::optional<std::size_t> acquireSlot();
-    void releaseSlot(std::size_t slot);
+    
     std::array<bool, Capacity> isFree_;
 };
 
