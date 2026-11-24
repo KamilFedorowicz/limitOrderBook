@@ -64,6 +64,17 @@ Order* OrderPool::get(std::size_t slot)
     return &orders_[slot];
 }
 
+const Order* OrderPool::get(std::size_t slot) const
+{
+    if(slot >= Capacity)
+        return nullptr;
+    
+    if(isFree_[slot] == true)
+        return nullptr;
+    
+    return &orders_[slot];
+}
+
 /*
  // basically the release function
  bool OrderPool::remove(std::size_t slot)

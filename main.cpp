@@ -13,6 +13,9 @@
 #include "SPSCRingBuffer.h"
 #include "Counters.h"
 #include "OrderPool.h"
+#include "PooledPriceLevel.h"
+#include "PooledLimitOrderBook.h"
+
 
 
 constexpr std::size_t eventCount = 1'000'000;

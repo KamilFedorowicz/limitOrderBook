@@ -9,6 +9,7 @@ public:
     OrderPool();
     std::optional<std::size_t> add(const Order& order);
     Order* get(std::size_t slot);
+    const Order* get(std::size_t slot) const;
     void releaseSlot(std::size_t slot);
 
     
