@@ -277,54 +277,35 @@ void preallocatedSpace()
 int main(int argc, const char * argv[]) {
 
 
-    OrderPool pool;
-
+    PooledLimitOrderBook book;
     
-    for (std::size_t i = 0; i < 6; ++i)
-    {
-        std::optional<std::size_t> isAdded = pool.add(Order{
-            static_cast<OrderId>(i),
-            Side::Buy,
-            10000,
-            100
-        });
-        
-        if(isAdded.has_value())
-        {
-            std::cout << "Added order " << i << std::endl;
-        }
-        else
-        {
-            std::cout << "Rejected order " << i << std::endl;
-        }
-    }
-    
-    Order* ord = pool.get(1);
-    pool.releaseSlot(1);
-    
-    Order* ord2 = pool.get(1);
-    if(ord2 == nullptr)
-    {
-        std::cout << "Empty order\n";
-    }
-    else
-    {
-        std::cout << "Not empty\n";
-    }
-    
-    std::optional<std::size_t> slot = pool.add(Order{
-        static_cast<OrderId>(20),
+    book.add(Order{
+        1,
         Side::Buy,
         10000,
         100
     });
     
+    book.add(Order{
+        2,
+        Side::Buy,
+        10000,
+        100
+    });
     
-    if(slot.has_value())
-    {
-        Order* ord3 = pool.get(slot.value());
-        std::cout << "Id of the added order: " << ord3->id << std::endl;
-    }
+    book.cancel(1);
+    
+    book.add(Order{
+        3,
+        Side::Buy,
+        10000,
+        100
+    });
+    
+    book.displayOrders();
+    
+    
+    
 
     
     
