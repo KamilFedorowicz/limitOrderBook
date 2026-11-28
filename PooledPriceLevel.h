@@ -14,6 +14,11 @@ public:
     bool empty() const;
     bool removeSlot(std::size_t slot);
     
+    const std::list<std::size_t>& slots() const
+    {
+        return slots_;
+    }
+    
 private:
     Price price_;
     std::list<std::size_t> slots_;

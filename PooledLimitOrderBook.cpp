@@ -168,3 +168,180 @@ std::optional<Quantity> PooledLimitOrderBook::quantityAtPrice(Side side, Price p
     }
 
 }
+
+std::optional<Price> PooledLimitOrderBook::spread() const
+{
+    auto bid = bestBid();
+    auto ask = bestAsk();
+    
+    if(!ask.has_value() || !bid.has_value())
+        return std::nullopt;
+    
+    return ask.value() - bid.value();
+    
+}
+
+void PooledLimitOrderBook::process(const MarketEvent& event)
+{
+    switch(event.type)
+    {
+        case EventType::Add:
+        {
+            const Order order({event.id, event.side, event.price, event.quantity});
+            add(order);
+            break;
+        }
+        case EventType::Cancel:
+        {
+            cancel(event.id);
+            break;
+        }
+        case EventType::Modify:
+        {
+            modify(event.id, event.quantity);
+            break;
+            
+        }
+        default:
+            break;
+    }
+}
+
+bool PooledLimitOrderBook::validate() const
+{
+    std::size_t orderCount = 0;
+
+    // Validate bid price levels
+    for (const auto& [price, priceLevel] : bids_)
+    {
+        // Empty price levels should never remain in the book.
+        if (priceLevel.empty())
+        {
+            return false;
+        }
+
+        for (std::size_t slot : priceLevel.slots())
+        {
+            // Every referenced slot must contain an active Order.
+            const Order* order = orderPool_.get(slot);
+
+            if (order == nullptr)
+            {
+                return false;
+            }
+
+            // Order must belong to this price level.
+            if (order->price != price)
+            {
+                return false;
+            }
+
+            // Order must belong to the bid side.
+            if (order->side != Side::Buy)
+            {
+                return false;
+            }
+
+            if (order->quantity == 0)
+            {
+                return false;
+            }
+
+            // Every Order in a price level must have an index entry.
+            auto indexIt = orderIndex_.find(order->id);
+
+            if (indexIt == orderIndex_.end())
+            {
+                return false;
+            }
+
+            const PooledOrderLocation& location = indexIt->second;
+
+            if (location.side != order->side)
+            {
+                return false;
+            }
+
+            if (location.price != order->price)
+            {
+                return false;
+            }
+
+            if (location.slot != slot)
+            {
+                return false;
+            }
+
+            ++orderCount;
+        }
+    }
+
+    // Validate ask price levels
+    for (const auto& [price, priceLevel] : asks_)
+    {
+        if (priceLevel.empty())
+        {
+            return false;
+        }
+
+        for (std::size_t slot : priceLevel.slots())
+        {
+            const Order* order = orderPool_.get(slot);
+
+            if (order == nullptr)
+            {
+                return false;
+            }
+
+            if (order->price != price)
+            {
+                return false;
+            }
+
+            if (order->side != Side::Sell)
+            {
+                return false;
+            }
+
+            if (order->quantity == 0)
+            {
+                return false;
+            }
+
+            auto indexIt = orderIndex_.find(order->id);
+
+            if (indexIt == orderIndex_.end())
+            {
+                return false;
+            }
+
+            const PooledOrderLocation& location = indexIt->second;
+
+            if (location.side != order->side)
+            {
+                return false;
+            }
+
+            if (location.price != order->price)
+            {
+                return false;
+            }
+
+            if (location.slot != slot)
+            {
+                return false;
+            }
+
+            ++orderCount;
+        }
+    }
+
+    // If every book Order has an index entry, but the index contains
+    // additional stale entries, this catches it.
+    if (orderCount != orderIndex_.size())
+    {
+        return false;
+    }
+
+    return true;
+}
