@@ -18,7 +18,7 @@
 
 
 
-constexpr std::size_t eventCount = 1'000'000;
+constexpr std::size_t eventCount = 100'000;
 
 void producer(MarketDataGenerator& generator, BoundedQueue& queue)
 {
@@ -43,8 +43,93 @@ void consumer(LimitOrderBook& book, BoundedQueue& queue)
     }
 }
 
+constexpr std::size_t iterations2 = 1'000'000;
+void allocationBenchmark()
+{
+    std::vector<Order*> orders;
+    orders.reserve(iterations2);
+
+    auto start = std::chrono::steady_clock::now();
+
+    for (std::size_t i = 0; i < iterations2; ++i)
+    {
+        orders.push_back(
+            new Order{
+                static_cast<OrderId>(i),
+                Side::Buy,
+                10000,
+                100
+            }
+        );
+    }
+
+    auto end = std::chrono::steady_clock::now();
+
+    std::uint64_t checksum = 0;
+
+    for (Order* order : orders)
+    {
+        checksum += order->id;
+    }
+
+    for (Order* order : orders)
+    {
+        delete order;
+    }
+
+    double seconds =
+        std::chrono::duration<double>(end - start).count();
+
+    std::cout << "Checksum: " << checksum << '\n';
+    std::cout << std::fixed << std::setprecision(9)
+              << "Allocation benchmark time: " << seconds << "s\n";
+}
+
+void preallocatedSpace()
+{
+    std::vector<Order> orders;
+    orders.reserve(iterations2);
+    
+    auto start = std::chrono::steady_clock::now();
+    
+    for (std::size_t i = 0; i < iterations2; ++i)
+    {
+        orders.push_back(Order{
+            static_cast<OrderId>(i),
+            Side::Buy,
+            10000,
+            100
+        });
+    }
+    
+    auto end = std::chrono::steady_clock::now();
+    
+    std::uint64_t checksum = 0;
+
+    for (const Order& order : orders)
+    {
+        checksum += order.id;
+    }
+    
+    double seconds = std::chrono::duration<double>(end - start).count();
+
+    std::cout << "Checksum: " << checksum << '\n';
+    std::cout << std::fixed << std::setprecision(9)
+              << "Pre-allocation time: " << seconds << "s\n";
+}
+
+std::int64_t percentile(const std::vector<std::int64_t>& sorted, double p)
+{
+    std::size_t index = static_cast<std::size_t>(p * (sorted.size() - 1));
+
+    return sorted[index];
+}
+
+
 double runSingleThreaded()
 {
+    std::vector<std::int64_t> latencies;
+    latencies.reserve(eventCount);
     LimitOrderBook book;
     MarketDataGenerator generator;
 
@@ -53,7 +138,12 @@ double runSingleThreaded()
     for (std::size_t i = 0; i < eventCount; ++i)
     {
         MarketEvent event = generator.next();
+        auto start = std::chrono::steady_clock::now();
         book.process(event);
+        auto end = std::chrono::steady_clock::now();
+        
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        latencies.push_back(ns);
     }
 
     auto end = std::chrono::steady_clock::now();
@@ -67,6 +157,14 @@ double runSingleThreaded()
     std::cout << "Events: " << eventCount << std::endl;
     std::cout << "Time: " << seconds << "s" << std::endl;
     std::cout << "Throughput: " << throughput << " events/s" << std::endl;
+    
+    std::sort(latencies.begin(), latencies.end());
+    std::cout << "Fastest: " << latencies[0] << ", slowest: " << latencies[latencies.size()-1] << std::endl;
+    std::cout << "p50:   " << percentile(latencies, 0.50)  << " ns\n";
+    std::cout << "p95:   " << percentile(latencies, 0.95)  << " ns\n";
+    std::cout << "p99:   " << percentile(latencies, 0.99)  << " ns\n";
+    std::cout << "p99.9: " << percentile(latencies, 0.999) << " ns\n";
+    std::cout << "max:   " << latencies.back()             << " ns\n";
     
     return seconds;
 }
@@ -159,6 +257,7 @@ void runSPSCBuffer()
 }
 
 constexpr std::size_t iterations = 100'000'000;
+
 void thr1(Counters& counters)
 {
     for(std::size_t i = 0; i<iterations; i++)
@@ -198,112 +297,50 @@ void runSimpleCounterExample()
     std::cout << "Time: " << seconds << "s" << std::endl;
 }
 
-constexpr std::size_t iterations2 = 1'000'000;
 
-void allocationBenchmark()
+double runPooledSingleThreaded()
 {
-    std::vector<Order*> orders;
-    orders.reserve(iterations2);
+    std::vector<std::int64_t> latencies;
+    latencies.reserve(eventCount);
+    
+    PooledLimitOrderBook book;
+    MarketDataGenerator generator;
 
     auto start = std::chrono::steady_clock::now();
 
-    for (std::size_t i = 0; i < iterations2; ++i)
+    for (std::size_t i = 0; i < eventCount; ++i)
     {
-        orders.push_back(
-            new Order{
-                static_cast<OrderId>(i),
-                Side::Buy,
-                10000,
-                100
-            }
-        );
+        MarketEvent event = generator.next();
+        auto start = std::chrono::steady_clock::now();
+        book.process(event);
+        auto end = std::chrono::steady_clock::now();
+        
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        latencies.push_back(ns);
     }
 
     auto end = std::chrono::steady_clock::now();
 
-    std::uint64_t checksum = 0;
-
-    for (Order* order : orders)
-    {
-        checksum += order->id;
-    }
-
-    for (Order* order : orders)
-    {
-        delete order;
-    }
-
-    double seconds =
-        std::chrono::duration<double>(end - start).count();
-
-    std::cout << "Checksum: " << checksum << '\n';
-    std::cout << std::fixed << std::setprecision(9)
-              << "Allocation benchmark time: " << seconds << "s\n";
-}
-
-void preallocatedSpace()
-{
-    std::vector<Order> orders;
-    orders.reserve(iterations2);
+    //assert(book.validate());
     
-    auto start = std::chrono::steady_clock::now();
-    
-    for (std::size_t i = 0; i < iterations2; ++i)
-    {
-        orders.push_back(Order{
-            static_cast<OrderId>(i),
-            Side::Buy,
-            10000,
-            100
-        });
-    }
-    
-    auto end = std::chrono::steady_clock::now();
-    
-    std::uint64_t checksum = 0;
+    std::sort(latencies.begin(), latencies.end());
+    std::cout << "Fastest: " << latencies[0] << ", slowest: " << latencies[latencies.size()-1] << std::endl;
+    std::cout << "p50:   " << percentile(latencies, 0.50)  << " ns\n";
+    std::cout << "p95:   " << percentile(latencies, 0.95)  << " ns\n";
+    std::cout << "p99:   " << percentile(latencies, 0.99)  << " ns\n";
+    std::cout << "p99.9: " << percentile(latencies, 0.999) << " ns\n";
+    std::cout << "max:   " << latencies.back()             << " ns\n";
 
-    for (const Order& order : orders)
-    {
-        checksum += order.id;
-    }
-    
-    double seconds = std::chrono::duration<double>(end - start).count();
-
-    std::cout << "Checksum: " << checksum << '\n';
-    std::cout << std::fixed << std::setprecision(9)
-              << "Pre-allocation time: " << seconds << "s\n";
+    return std::chrono::duration<double>(end - start).count();
 }
 
 int main(int argc, const char * argv[]) {
 
 
-    PooledLimitOrderBook book;
+    double t1 = runSingleThreaded();
+    double t2 = runPooledSingleThreaded();
     
-    book.add(Order{
-        1,
-        Side::Buy,
-        10000,
-        100
-    });
-    
-    book.add(Order{
-        2,
-        Side::Buy,
-        10000,
-        100
-    });
-    
-    book.cancel(1);
-    
-    book.add(Order{
-        3,
-        Side::Buy,
-        10000,
-        100
-    });
-    
-    book.displayOrders();
-    
+    std::cout << "T1: " << t1 << ", T2: " << t2 << std::endl;
     
     
 

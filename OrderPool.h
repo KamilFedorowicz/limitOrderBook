@@ -14,7 +14,7 @@ public:
 
     
 private:
-    static constexpr std::size_t Capacity = 5;
+    static constexpr std::size_t Capacity = 1024;
     
     std::array<Order, Capacity> orders_;
     std::vector<std::size_t> freeSlots_;
